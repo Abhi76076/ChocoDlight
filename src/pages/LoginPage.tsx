@@ -28,26 +28,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
 
     try {
       if (isLogin) {
-        const success = await login(formData.email, formData.password);
-        if (success) {
-          onNavigate('home');
-        } else {
-          setError('Invalid email or password');
-        }
+        await login(formData.email, formData.password);
+        onNavigate('home');
       } else {
         if (formData.password !== formData.confirmPassword) {
           setError('Passwords do not match');
+          setIsLoading(false);
           return;
         }
-        const success = await register(formData.name, formData.email, formData.password);
-        if (success) {
-          onNavigate('home');
-        } else {
-          setError('Registration failed. Please try again.');
-        }
+        await register(formData.name, formData.email, formData.password);
+        onNavigate('home');
       }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -184,7 +177,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
 
           {isLogin && (
             <div className="text-center mt-4">
-              <button className="text-amber-600 hover:text-amber-700 text-sm">
+              <button 
+                onClick={() => onNavigate('forgot-password')}
+                className="text-amber-600 hover:text-amber-700 text-sm"
+              >
                 Forgot your password?
               </button>
             </div>

@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Order } from '../types';
+import { User } from '../types';
+import ApiService from '../services/api';
 
 interface AuthContextType {
   user: User | null;
+  loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  orders: Order[];
   favorites: string[];
   addToFavorites: (productId: string) => void;
   removeFromFavorites: (productId: string) => void;
@@ -16,60 +17,64 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [favorites, setFavorites] = useState<string[]>([]);
 
   useEffect(() => {
-    // Load user data from localStorage on mount
-    const savedUser = localStorage.getItem('user');
-    const savedOrders = localStorage.getItem('orders');
+    // Load user data and check token validity
+    const initAuth = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          ApiService.setToken(token);
+          const response = await ApiService.getCurrentUser();
+          setUser(response.user);
+        } catch (error) {
+          console.error('Token validation failed:', error);
+          localStorage.removeItem('token');
+          ApiService.setToken(null);
+        }
+      }
+      setLoading(false);
+    };
+
+    initAuth();
+
+    // Load favorites from localStorage
     const savedFavorites = localStorage.getItem('favorites');
-    
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-    }
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
     }
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (email === 'demo@chocodlight.com' && password === 'password') {
-      const userData: User = {
-        id: '1',
-        name: 'Demo User',
-        email: 'demo@chocodlight.com'
-      };
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
+    try {
+      const response = await ApiService.login({ email, password });
+      setUser(response.user);
       return true;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      if (error.message.includes('not authorized')) {
+        throw new Error('You are not authorized. Please signup first.');
+      }
+      throw error;
     }
-    return false;
   };
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const userData: User = {
-      id: Date.now().toString(),
-      name,
-      email
-    };
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-    return true;
+    try {
+      const response = await ApiService.register({ name, email, password, confirmPassword: password });
+      setUser(response.user);
+      return true;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    ApiService.logout();
   };
 
   const addToFavorites = (productId: string) => {
@@ -87,10 +92,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <AuthContext.Provider value={{
       user,
+      loading,
       login,
       register,
       logout,
-      orders,
       favorites,
       addToFavorites,
       removeFromFavorites

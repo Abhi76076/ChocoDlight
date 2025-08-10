@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, User, Package, Heart, Settings, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import ApiService from '../services/api';
 import { products } from '../data/products';
 
 interface ProfilePageProps {
@@ -8,8 +9,39 @@ interface ProfilePageProps {
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
-  const { user, logout, orders, favorites } = useAuth();
+  const { user, logout, favorites } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'favorites'>('profile');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (user && activeTab === 'orders') {
+      loadOrders();
+    }
+  }, [user, activeTab]);
+
+  const loadOrders = async () => {
+    try {
+      setLoading(true);
+      const ordersData = await ApiService.getMyOrders();
+      setOrders(ordersData);
+    } catch (error) {
+      console.error('Error loading orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (window.confirm('Are you sure you want to cancel this order?')) {
+      try {
+        await ApiService.cancelOrder(orderId);
+        loadOrders(); // Reload orders
+      } catch (error: any) {
+        alert(error.message || 'Failed to cancel order');
+      }
+    }
+  };
 
   if (!user) {
     return (
@@ -142,27 +174,52 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
             {activeTab === 'orders' && (
               <div>
                 <h3 className="text-lg font-semibold mb-4">Order History</h3>
-                {orders.length > 0 ? (
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto mb-4"></div>
+                    <p>Loading orders...</p>
+                  </div>
+                ) : orders.length > 0 ? (
                   <div className="space-y-4">
                     {orders.map((order) => (
-                      <div key={order.id} className="border rounded-lg p-4">
+                      <div key={order._id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <p className="font-semibold">Order #{order.id}</p>
-                            <p className="text-sm text-gray-600">{order.createdAt}</p>
+                            <p className="font-semibold">Order #{order._id.slice(-8)}</p>
+                            <p className="text-sm text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</p>
                           </div>
-                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                            order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                            order.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                          </span>
+                          <div className="text-right">
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                              order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                              order.status === 'processing' || order.status === 'packed' ? 'bg-yellow-100 text-yellow-800' :
+                              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </span>
+                            {order.canCancel && order.status !== 'cancelled' && (
+                              <button
+                                onClick={() => handleCancelOrder(order._id)}
+                                className="ml-2 text-red-600 hover:text-red-800 text-sm font-semibold"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <p className="text-lg font-semibold text-amber-900">
                           Total: ${order.total.toFixed(2)}
                         </p>
+                        <div className="mt-3 border-t pt-3">
+                          <h4 className="font-medium mb-2">Items:</h4>
+                          {order.items.map((item: any, index: number) => (
+                            <div key={index} className="flex justify-between text-sm text-gray-600">
+                              <span>{item.product?.name} x {item.quantity}</span>
+                              <span>${(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>

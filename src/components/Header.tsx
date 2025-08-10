@@ -109,6 +109,14 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onToggl
             <div className="relative">
               {user ? (
                 <div className="flex items-center space-x-2">
+                  {user.role === 'admin' && (
+                    <button 
+                      onClick={() => handleNavigation('admin')}
+                      className="text-sm bg-amber-600 text-white px-3 py-1 rounded-lg hover:bg-amber-700 transition-colors"
+                    >
+                      Admin
+                    </button>
+                  )}
                   <button 
                     onClick={() => handleNavigation('profile')}
                     className="p-2 text-gray-700 hover:text-amber-900 transition-colors"

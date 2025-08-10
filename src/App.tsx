@@ -8,8 +8,10 @@ import { CheckoutPage } from './pages/CheckoutPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { OrderSuccessPage } from './pages/OrderSuccessPage';
+import { AdminDashboard } from './pages/AdminDashboard';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { CartProvider } from './contexts/CartContext';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Footer } from './components/Footer';
 
 function App() {
@@ -50,8 +52,12 @@ function App() {
         return <CheckoutPage onNavigate={handleNavigate} />;
       case 'login':
         return <LoginPage onNavigate={handleNavigate} />;
+      case 'forgot-password':
+        return <ForgotPasswordPage onNavigate={handleNavigate} />;
       case 'profile':
         return <ProfilePage onNavigate={handleNavigate} />;
+      case 'admin':
+        return <AdminDashboard onNavigate={handleNavigate} />;
       case 'order-success':
         return <OrderSuccessPage onNavigate={handleNavigate} />;
       case 'about':
@@ -75,7 +81,7 @@ function App() {
               <div className="bg-white rounded-lg shadow-lg p-8">
                 <p className="text-gray-700 mb-6">We'd love to hear from you! Get in touch with us.</p>
                 <div className="space-y-4">
-                  <p><strong>Email:</strong> inf@gmail.com</p>
+                  <p><strong>Email:</strong> info@chocodlight.com</p>
                   <p><strong>Phone:</strong> (555) 123-4567</p>
                   <p><strong>Address:</strong> 123 Chocolate Ave, Sweet City, SC 12345</p>
                 </div>
