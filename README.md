@@ -10,7 +10,7 @@ A full-stack e-commerce application for a premium chocolate shop built with Reac
 ![Product Page](./screenshots/items.png)
 
 ### 🛠️ Admin Dashboard
-![Admin Dashboard](./screenshots/loginpage.png)
+![Login Page](./screenshots/loginpage.png)
 
 
 ## 🍫 Features
