@@ -1,7 +1,7 @@
-const express = require('express');
-const Order = require('../models/Order');
-const Product = require('../models/Product');
-const { auth, adminAuth } = require('../middleware/auth');
+import express from 'express';
+import Order from '../models/Order.js';
+import Product from '../models/Product.js';
+import { auth, adminAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -151,4 +151,4 @@ router.patch('/admin/:id/status', adminAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

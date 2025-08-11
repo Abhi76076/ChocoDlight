@@ -54,9 +54,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return true;
     } catch (error: any) {
       console.error('Login error:', error);
-      if (error.message.includes('not authorized')) {
-        throw new Error('You are not authorized. Please signup first.');
-      }
       throw error;
     }
   };

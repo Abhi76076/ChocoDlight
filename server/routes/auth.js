@@ -1,8 +1,8 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { auth } = require('../middleware/auth');
-const { sendOTPEmail } = require('../utils/email');
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
+import { auth } from '../middleware/auth.js';
+import { sendOTPEmail } from '../utils/email.js';
 
 const router = express.Router();
 
@@ -200,4 +200,4 @@ router.get('/me', auth, async (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

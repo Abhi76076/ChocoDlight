@@ -73,15 +73,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
             </p>
           </div>
 
-          {/* Demo Credentials */}
-          {isLogin && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-amber-800 font-semibold mb-2">Demo Credentials:</p>
-              <p className="text-sm text-amber-700">Email: demo@chocodlight.com</p>
-              <p className="text-sm text-amber-700">Password: password</p>
-            </div>
-          )}
-
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
               {error}

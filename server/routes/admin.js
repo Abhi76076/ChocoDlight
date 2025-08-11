@@ -1,8 +1,8 @@
-const express = require('express');
-const User = require('../models/User');
-const Product = require('../models/Product');
-const Order = require('../models/Order');
-const { adminAuth } = require('../middleware/auth');
+import express from 'express';
+import User from '../models/User.js';
+import Product from '../models/Product.js';
+import Order from '../models/Order.js';
+import { adminAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -82,4 +82,4 @@ router.get('/dashboard', adminAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
