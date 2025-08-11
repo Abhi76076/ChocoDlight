@@ -19,7 +19,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
     city: '',
     state: '',
     zipCode: '',
-    country: 'US'
+    country: 'INDIA'
   });
 
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
@@ -171,9 +171,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, country: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                     >
-                      <option value="US">United States</option>
-                      <option value="CA">Canada</option>
+                      <option value="IN">India</option>
+                      <option value="SW">Switzerland</option>
                       <option value="UK">United Kingdom</option>
+                      <option value="CA">Canada</option>
+                      <option value="JP">Japan</option>
+                      <option value="SK">South Korea</option>
+                      <option value="BK">Bangkok</option>
                     </select>
                   </div>
                 </div>
