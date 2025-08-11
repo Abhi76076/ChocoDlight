@@ -34,7 +34,7 @@ A full-stack e-commerce application for a premium chocolate shop built with Reac
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Abhi76076/ChocoDlight.git
    cd chocolate-shop
    ```
 
@@ -43,28 +43,36 @@ A full-stack e-commerce application for a premium chocolate shop built with Reac
    npm install
    ```
 
-3. **Set up environment variables**
+3. **For Start the server and application with in one cmd in root directory of project open terminal and run these cmd.**
+   ```bash
+   npm install concurrently --save-dev
+   npm install nodemon --save-dev
+   ```
+
+4. **Set up environment variables**
    - Copy `.env.example` to `.env`
    - Update the following variables in `.env`:
    ```env
    MONGODB_URI=mongodb://localhost:27017/chocolate-shop
    JWT_SECRET=your-super-secret-jwt-key
+   EMAIL_HOST=smtp.gmail.com
    EMAIL_USER=your-email@gmail.com
    EMAIL_PASS=your-app-password
+   EMAIL_PORT=587
    VITE_API_URL=http://localhost:5000/api
    ```
 
-4. **Start MongoDB**
+5. **Start MongoDB**
    - **Local MongoDB**: Make sure MongoDB is running on your system
    - **MongoDB Atlas**: Use the connection string from your Atlas cluster
 
-5. **Run the application**
+6. **Run the application**
    ```bash
-   npm start
+   npm run dev
    ```
    This command starts both the backend server (port 5000) and frontend development server (port 5173).
 
-6. **Access the application**
+7. **Access the application**
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:5000
 
@@ -72,6 +80,11 @@ A full-stack e-commerce application for a premium chocolate shop built with Reac
 
 ```
 chocolate-shop/
+|___screenshots           #for screenshots of the project
+|   |_homepage.png
+|   |_items.png
+|   |_loginpage.png
+|
 ├── server/                 # Backend application
 │   ├── config/            # Database configuration
 │   ├── middleware/        # Authentication middleware
@@ -88,13 +101,23 @@ chocolate-shop/
 │   └── types/           # TypeScript type definitions
 ├── public/              # Static assets
 └── package.json         # Project dependencies and scripts
+|___env.example          #environment setup for backend database
 ```
+## 🖼️ Screenshots
+
+### 🏠 Homepage
+![Homepage](./screenshots/homepage.png)
+
+### 🛍️ Product Page
+![Product Page](./screenshots/items.png)
+
+### 🛠️ Admin Dashboard
+![Admin Dashboard](./screenshots/loginpage.png)
 
 ## 🛠️ Available Scripts
 
 ### Development
-- `npm start` - Run both frontend and backend in development mode
-- `npm run dev` - Run only frontend development server
+- `npm run dev` - Run both frontend and backend in development mode
 - `npm run server:dev` - Run only backend server with nodemon
 - `npm run server` - Run backend server in production mode
 
