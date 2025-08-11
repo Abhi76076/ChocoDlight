@@ -2,6 +2,17 @@
 
 A full-stack e-commerce application for a premium chocolate shop built with React, Node.js, Express, and MongoDB.
 
+
+### 🏠 Homepage
+![Homepage](./screenshots/homepage.png)
+
+### 🛍️ Product Page
+![Product Page](./screenshots/items.png)
+
+### 🛠️ Admin Dashboard
+![Admin Dashboard](./screenshots/loginpage.png)
+
+
 ## 🍫 Features
 
 ### Frontend Features
@@ -103,16 +114,6 @@ chocolate-shop/
 └── package.json         # Project dependencies and scripts
 |___env.example          #environment setup for backend database
 ```
-## 🖼️ Screenshots
-
-### 🏠 Homepage
-![Homepage](./screenshots/homepage.png)
-
-### 🛍️ Product Page
-![Product Page](./screenshots/items.png)
-
-### 🛠️ Admin Dashboard
-![Admin Dashboard](./screenshots/loginpage.png)
 
 ## 🛠️ Available Scripts
 
