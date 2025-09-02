@@ -3,6 +3,7 @@ import { ArrowLeft, CreditCard, Truck, Shield } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Address } from '../types';
+import apiService from '../services/api';
 
 interface CheckoutPageProps {
   onNavigate: (page: string) => void;
@@ -13,13 +14,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState('');
 
   const [shippingAddress, setShippingAddress] = useState<Address>({
-    street: '',
-    city: '',
-    state: '',
-    zipCode: '',
-    country: 'INDIA'
+    street: user?.address?.street || '',
+    city: user?.address?.city || '',
+    state: user?.address?.state || '',
+    zipCode: user?.address?.zipCode || '',
+    country: user?.address?.country || 'IN'
   });
 
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
@@ -40,15 +42,38 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
       return;
     }
 
+    if (!shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zipCode) {
+      setError('Please fill in all shipping address fields');
+      return;
+    }
+
+    if (paymentMethod === 'credit-card' && (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv || !cardDetails.name)) {
+      setError('Please fill in all payment details');
+      return;
+    }
+
     setIsProcessing(true);
+    setError('');
     
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Clear cart and redirect to success page
-    clearCart();
-    setIsProcessing(false);
-    onNavigate('order-success');
+    try {
+      const orderData = {
+        items: state.items.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity
+        })),
+        shippingAddress,
+        paymentMethod
+      };
+
+      await apiService.createOrder(orderData);
+      await clearCart();
+      onNavigate('order-success');
+    } catch (error: any) {
+      console.error('Order creation error:', error);
+      setError(error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const steps = [
@@ -84,6 +109,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
           <ArrowLeft className="w-5 h-5 mr-2" />
           Back to Cart
         </button>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+            {error}
+          </div>
+        )}
 
         {/* Progress Steps */}
         <div className="mb-8">
@@ -127,6 +158,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       value={shippingAddress.street}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      required
                     />
                   </div>
                   <div>
@@ -138,6 +170,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       value={shippingAddress.city}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, city: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      required
                     />
                   </div>
                   <div>
@@ -149,6 +182,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       value={shippingAddress.state}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, state: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      required
                     />
                   </div>
                   <div>
@@ -160,6 +194,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       value={shippingAddress.zipCode}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, zipCode: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      required
                     />
                   </div>
                   <div>
@@ -172,18 +207,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                     >
                       <option value="IN">India</option>
-                      <option value="SW">Switzerland</option>
+                      <option value="US">United States</option>
                       <option value="UK">United Kingdom</option>
                       <option value="CA">Canada</option>
-                      <option value="JP">Japan</option>
-                      <option value="SK">South Korea</option>
-                      <option value="BK">Bangkok</option>
                     </select>
                   </div>
                 </div>
                 <button
                   onClick={() => setCurrentStep(2)}
-                  className="mt-6 bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                  disabled={!shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zipCode}
+                  className="mt-6 bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Continue to Payment
                 </button>
@@ -220,6 +253,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                           onChange={(e) => setCardDetails(prev => ({ ...prev, number: e.target.value }))}
                           placeholder="1234 5678 9012 3456"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          required
                         />
                       </div>
                       <div>
@@ -232,6 +266,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                           onChange={(e) => setCardDetails(prev => ({ ...prev, expiry: e.target.value }))}
                           placeholder="MM/YY"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          required
                         />
                       </div>
                       <div>
@@ -244,6 +279,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                           onChange={(e) => setCardDetails(prev => ({ ...prev, cvv: e.target.value }))}
                           placeholder="123"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          required
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -255,6 +291,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                           value={cardDetails.name}
                           onChange={(e) => setCardDetails(prev => ({ ...prev, name: e.target.value }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          required
                         />
                       </div>
                     </div>
@@ -271,6 +308,19 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       className="text-amber-600"
                     />
                     <label htmlFor="paypal" className="font-medium">PayPal</label>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="radio"
+                      id="cash-on-delivery"
+                      name="payment"
+                      value="cash-on-delivery"
+                      checked={paymentMethod === 'cash-on-delivery'}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="text-amber-600"
+                    />
+                    <label htmlFor="cash-on-delivery" className="font-medium">Cash on Delivery</label>
                   </div>
                 </div>
                 
@@ -315,6 +365,27 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                     </div>
                   ))}
                 </div>
+
+                {/* Shipping Address Review */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-semibold mb-2">Shipping Address</h4>
+                  <p className="text-sm text-gray-600">
+                    {shippingAddress.street}<br/>
+                    {shippingAddress.city}, {shippingAddress.state} {shippingAddress.zipCode}<br/>
+                    {shippingAddress.country}
+                  </p>
+                </div>
+
+                {/* Payment Method Review */}
+                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-semibold mb-2">Payment Method</h4>
+                  <p className="text-sm text-gray-600 capitalize">
+                    {paymentMethod.replace('-', ' ')}
+                    {paymentMethod === 'credit-card' && cardDetails.number && (
+                      <span> ending in {cardDetails.number.slice(-4)}</span>
+                    )}
+                  </p>
+                </div>
                 
                 <div className="flex space-x-4">
                   <button
@@ -338,6 +409,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
           {/* Order Summary */}
           <div className="bg-white rounded-lg shadow-md p-6 h-fit">
             <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+            <div className="space-y-3 mb-4">
+              {state.items.map((item) => (
+                <div key={item.product.id} className="flex justify-between text-sm">
+                  <span>{item.product.name} x {item.quantity}</span>
+                  <span>${(item.product.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>Subtotal</span>

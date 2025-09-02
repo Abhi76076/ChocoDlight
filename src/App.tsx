@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Header } from './components/Header';
 import { Cart } from './components/Cart';
 import { HomePage } from './pages/HomePage';
@@ -20,6 +21,24 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
 
+  // Maintain current page on refresh
+  useEffect(() => {
+    const savedPage = sessionStorage.getItem('currentPage');
+    const savedProductId = sessionStorage.getItem('selectedProductId');
+    if (savedPage) {
+      setCurrentPage(savedPage);
+    }
+    if (savedProductId) {
+      setSelectedProductId(savedProductId);
+    }
+  }, []);
+
+  useEffect(() => {
+    sessionStorage.setItem('currentPage', currentPage);
+    if (selectedProductId) {
+      sessionStorage.setItem('selectedProductId', selectedProductId);
+    }
+  }, [currentPage, selectedProductId]);
   const handleNavigate = (page: string, productId?: string) => {
     setCurrentPage(page);
     if (productId) {

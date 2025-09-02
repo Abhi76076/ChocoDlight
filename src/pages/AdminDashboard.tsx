@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, Package, ShoppingCart, Clock, Plus, Edit, Trash2 } from 'lucide-react';
-import ApiService from '../services/api';
+import apiService from '../services/api';
 
 interface AdminDashboardProps {
   onNavigate: (page: string) => void;
@@ -41,10 +41,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     try {
       setLoading(true);
       const [dashboardData, productsData, customersData, ordersData] = await Promise.all([
-        ApiService.getDashboardStats(),
-        ApiService.getProducts(),
-        ApiService.getCustomers(),
-        ApiService.getAllOrders()
+        apiService.getDashboardStats(),
+        apiService.getProducts(),
+        apiService.getCustomers(),
+        apiService.getAllOrders()
       ]);
 
       setStats(dashboardData.stats);
@@ -77,9 +77,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
       };
 
       if (editingProduct) {
-        await ApiService.updateProduct(editingProduct._id, productData);
+        await apiService.updateProduct(editingProduct._id, productData);
       } else {
-        await ApiService.createProduct(productData);
+        await apiService.createProduct(productData);
       }
 
       setShowProductForm(false);
@@ -130,7 +130,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const handleDeleteProduct = async (productId: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await ApiService.deleteProduct(productId);
+        await apiService.deleteProduct(productId);
         loadDashboardData();
       } catch (error) {
         console.error('Error deleting product:', error);
@@ -142,7 +142,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
   const handleDeleteCustomer = async (customerId: string) => {
     if (window.confirm('Are you sure you want to delete this customer?')) {
       try {
-        await ApiService.deleteCustomer(customerId);
+        await apiService.deleteCustomer(customerId);
         loadDashboardData();
       } catch (error) {
         console.error('Error deleting customer:', error);
@@ -153,7 +153,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
 
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
     try {
-      await ApiService.updateOrderStatus(orderId, status);
+      await apiService.updateOrderStatus(orderId, status);
       loadDashboardData();
     } catch (error) {
       console.error('Error updating order status:', error);

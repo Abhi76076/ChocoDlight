@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Mail, Key } from 'lucide-react';
-import ApiService from '../services/api';
+import apiService from '../services/api';
 
 interface ForgotPasswordPageProps {
   onNavigate: (page: string) => void;
@@ -27,7 +27,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onNaviga
     setMessage('');
 
     try {
-      await ApiService.forgotPassword({
+      await apiService.forgotPassword({
         email: formData.email,
         name: formData.name
       });
@@ -53,7 +53,7 @@ export const ForgotPasswordPage: React.FC<ForgotPasswordPageProps> = ({ onNaviga
     }
 
     try {
-      await ApiService.resetPassword({
+      await apiService.resetPassword({
         email: formData.email,
         otp: formData.otp,
         newPassword: formData.newPassword,

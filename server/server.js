@@ -9,6 +9,9 @@ import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
 import adminRoutes from './routes/admin.js';
+import cartRoutes from './routes/cart.js';
+import favoriteRoutes from './routes/favorites.js';
+import reviewRoutes from './routes/reviews.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +39,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Root route
 app.get('/', (req, res) => {

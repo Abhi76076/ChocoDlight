@@ -16,7 +16,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ productId,
   const [activeTab, setActiveTab] = useState<'description' | 'ingredients' | 'reviews'>('description');
   
   const { addItem } = useCart();
-  const { favorites, addToFavorites, removeFromFavorites } = useAuth();
+  const { user, isFavorite, addToFavorites, removeFromFavorites } = useAuth();
 
   const product = products.find(p => p.id === productId);
   const productReviews = reviews.filter(r => r.productId === productId);
@@ -37,20 +37,46 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ productId,
     );
   }
 
-  const isFavorite = favorites.includes(product.id);
+  const isProductFavorite = isFavorite(product.id);
 
-  const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addItem(product);
+  const handleAddToCart = async () => {
+    if (!user) {
+      alert('Please login to add items to cart');
+      return;
     }
-    setQuantity(1);
+
+    if (!product.inStock) {
+      alert('This product is out of stock');
+      return;
+    }
+
+    try {
+      // Add the specified quantity at once
+      await addItem(product, quantity);
+      console.log(`${quantity} item(s) added to cart successfully!`);
+      setQuantity(1);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Failed to add item to cart. Please try again.');
+    }
   };
 
-  const handleToggleFavorite = () => {
-    if (isFavorite) {
-      removeFromFavorites(product.id);
-    } else {
-      addToFavorites(product.id);
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      alert('Please login to manage favorites');
+      return;
+    }
+
+    try {
+      if (isProductFavorite) {
+        await removeFromFavorites(product.id);
+        alert('Removed from favorites');
+      } else {
+        await addToFavorites(product.id);
+        alert('Added to favorites');
+      }
+    } catch (error) {
+      console.error('Error managing favorites:', error);
     }
   };
 
@@ -147,7 +173,7 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ productId,
               </div>
 
               {/* Quantity and Add to Cart */}
-              {product.inStock && (
+              {user && product.inStock && (
                 <div className="space-y-4">
                   <div className="flex items-center space-x-4">
                     <span className="font-semibold">Quantity:</span>
@@ -179,14 +205,27 @@ export const ProductDetailPage: React.FC<ProductDetailPageProps> = ({ productId,
                     <button
                       onClick={handleToggleFavorite}
                       className={`p-3 rounded-lg border-2 transition-colors ${
-                        isFavorite
+                        isProductFavorite
                           ? 'border-red-500 bg-red-50 text-red-500'
                           : 'border-gray-300 hover:border-red-500 hover:text-red-500'
                       }`}
                     >
-                      <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
+                      <Heart className={`w-5 h-5 ${isProductFavorite ? 'fill-current' : ''}`} />
                     </button>
                   </div>
+                </div>
+              )}
+
+              {!user && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-amber-800 text-center">
+                    Please <button 
+                      onClick={() => onNavigate('login')}
+                      className="text-amber-600 hover:text-amber-700 font-semibold underline"
+                    >
+                      login
+                    </button> to add items to cart or favorites
+                  </p>
                 </div>
               )}
             </div>

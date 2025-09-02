@@ -93,17 +93,19 @@ export const Header: React.FC<HeaderProps> = ({ currentPage, onNavigate, onToggl
             </button>
 
             {/* Cart */}
-            <button 
-              onClick={onToggleCart}
-              className="p-2 relative text-gray-700 hover:text-amber-900 transition-colors"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-amber-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {itemCount}
-                </span>
-              )}
-            </button>
+            {user && (
+              <button 
+                onClick={onToggleCart}
+                className="p-2 relative text-gray-700 hover:text-amber-900 transition-colors"
+              >
+                <ShoppingCart className="w-5 h-5" />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-amber-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* User */}
             <div className="relative">

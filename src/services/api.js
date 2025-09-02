@@ -180,6 +180,86 @@ class ApiService {
   logout() {
     this.setToken(null);
   }
+
+  // Cart methods
+  async getCart() {
+    try {
+      return await this.request('/cart');
+    } catch (error) {
+      console.error('Get cart error:', error);
+      return { items: [], total: 0 };
+    }
+  }
+
+  async addToCart(productId, quantity = 1) {
+    return await this.request('/cart/add', {
+      method: 'POST',
+      body: JSON.stringify({ productId, quantity }),
+    });
+  }
+
+  async updateCartItem(productId, quantity) {
+    return await this.request('/cart/update', {
+      method: 'PUT',
+      body: JSON.stringify({ productId, quantity }),
+    });
+  }
+
+  async removeFromCart(productId) {
+    return await this.request(`/cart/remove/${productId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async clearCart() {
+    return await this.request('/cart/clear', {
+      method: 'DELETE',
+    });
+  }
+
+  // Favorites methods
+  async getFavorites() {
+    try {
+      return await this.request('/favorites');
+    } catch (error) {
+      console.error('Get favorites error:', error);
+      return [];
+    }
+  }
+
+  async addToFavorites(productId) {
+    return await this.request('/favorites/add', {
+      method: 'POST',
+      body: JSON.stringify({ productId }),
+    });
+  }
+
+  async removeFromFavorites(productId) {
+    return await this.request(`/favorites/remove/${productId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Reviews methods
+  async getProductReviews(productId) {
+    return await this.request(`/reviews/product/${productId}`);
+  }
+
+  async addReview(productId, rating, comment) {
+    return await this.request('/reviews', {
+      method: 'POST',
+      body: JSON.stringify({ productId, rating, comment }),
+    });
+  }
+
+  // User profile methods
+  async updateProfile(profileData) {
+    return await this.request('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
 }
 
-export default new ApiService();
+const apiService = new ApiService();
+export default apiService;

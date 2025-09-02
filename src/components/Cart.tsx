@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext'; 
 
 interface CartProps {
   isOpen: boolean;
@@ -10,8 +11,32 @@ interface CartProps {
 
 export const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
   const { state, updateQuantity, removeItem } = useCart();
+  const { user } = useAuth();
+
+  // Don't show cart if user is not logged in
+  if (!user) {
+    return null;
+  }
 
   if (!isOpen) return null;
+
+  const handleUpdateQuantity = async (productId: string, newQuantity: number) => {
+    try {
+      await updateQuantity(productId, newQuantity);
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      alert('Failed to update quantity. Please try again.');
+    }
+  };
+
+  const handleRemoveItem = async (productId: string) => {
+    try {
+      await removeItem(productId);
+    } catch (error) {
+      console.error('Error removing item:', error);
+      alert('Failed to remove item. Please try again.');
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50">
@@ -55,20 +80,20 @@ export const Cart: React.FC<CartProps> = ({ isOpen, onClose, onCheckout }) => {
                       </p>
                       <div className="flex items-center mt-2">
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          onClick={() => handleUpdateQuantity(item.product.id, item.quantity - 1)}
                           className="p-1 hover:bg-gray-200 rounded"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
                         <span className="mx-2 min-w-8 text-center">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          onClick={() => handleUpdateQuantity(item.product.id, item.quantity + 1)}
                           className="p-1 hover:bg-gray-200 rounded"
                         >
                           <Plus className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => removeItem(item.product.id)}
+                          onClick={() => handleRemoveItem(item.product.id)}
                           className="ml-2 p-1 hover:bg-red-100 text-red-600 rounded"
                         >
                           <X className="w-4 h-4" />

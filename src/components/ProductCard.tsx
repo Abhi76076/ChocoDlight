@@ -11,21 +11,51 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails }) => {
   const { addItem } = useCart();
-  const { favorites, addToFavorites, removeFromFavorites } = useAuth();
+  const { user, isFavorite, addToFavorites, removeFromFavorites } = useAuth();
   
-  const isFavorite = favorites.includes(product.id);
+  const isProductFavorite = isFavorite(product.id);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    addItem(product);
+    
+    if (!user) {
+      alert('Please login to add items to cart');
+      return;
+    }
+
+    if (!product.inStock) {
+      alert('This product is out of stock');
+      return;
+    }
+
+    try {
+      await addItem(product);
+      // Show success message without alert
+      console.log('Item added to cart successfully');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      alert('Failed to add item to cart. Please try again.');
+    }
   };
 
-  const handleToggleFavorite = (e: React.MouseEvent) => {
+  const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isFavorite) {
-      removeFromFavorites(product.id);
-    } else {
-      addToFavorites(product.id);
+    
+    if (!user) {
+      alert('Please login to manage favorites');
+      return;
+    }
+
+    try {
+      if (isProductFavorite) {
+        await removeFromFavorites(product.id);
+        alert('Removed from favorites');
+      } else {
+        await addToFavorites(product.id);
+        alert('Added to favorites');
+      }
+    } catch (error) {
+      console.error('Error managing favorites:', error);
     }
   };
 
@@ -50,16 +80,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
             <span className="text-white font-semibold text-lg">Out of Stock</span>
           </div>
         )}
-        <button
-          onClick={handleToggleFavorite}
-          className={`absolute top-2 right-2 p-2 rounded-full transition-colors ${
-            isFavorite 
-              ? 'bg-red-500 text-white' 
-              : 'bg-white text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
-        </button>
+        {user && (
+          <button
+            onClick={handleToggleFavorite}
+            className={`absolute top-2 right-2 p-2 rounded-full transition-colors ${
+              isProductFavorite 
+                ? 'bg-red-500 text-white' 
+                : 'bg-white text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${isProductFavorite ? 'fill-current' : ''}`} />
+          </button>
+        )}
       </div>
       
       <div className="p-4">
@@ -101,17 +133,29 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
             )}
           </div>
           
-          <button
-            onClick={handleAddToCart}
-            disabled={!product.inStock}
-            className={`p-2 rounded-full transition-colors ${
-              product.inStock
-                ? 'bg-amber-600 hover:bg-amber-700 text-white'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-          >
-            <ShoppingCart className="w-4 h-4" />
-          </button>
+          {user ? (
+            <button
+              onClick={handleAddToCart}
+              disabled={!product.inStock}
+              className={`p-2 rounded-full transition-colors ${
+                product.inStock
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <ShoppingCart className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                alert('Please login to add items to cart');
+              }}
+              className="p-2 rounded-full bg-gray-300 text-gray-500 transition-colors"
+            >
+              <ShoppingCart className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, User, Package, Heart, Settings, MapPin } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import ApiService from '../services/api';
+import apiService from '../services/api';
 import { products } from '../data/products';
 
 interface ProfilePageProps {
@@ -9,21 +9,35 @@ interface ProfilePageProps {
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
-  const { user, logout, favorites } = useAuth();
+  const { user, logout, favorites, loadFavorites } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'favorites'>('profile');
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    address: {
+      street: user?.address?.street || '',
+      city: user?.address?.city || '',
+      state: user?.address?.state || '',
+      zipCode: user?.address?.zipCode || '',
+      country: user?.address?.country || 'US'
+    }
+  });
 
   React.useEffect(() => {
     if (user && activeTab === 'orders') {
       loadOrders();
+    }
+    if (user && activeTab === 'favorites') {
+      loadFavorites();
     }
   }, [user, activeTab]);
 
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const ordersData = await ApiService.getMyOrders();
+      const ordersData = await apiService.getMyOrders();
       setOrders(ordersData);
     } catch (error) {
       console.error('Error loading orders:', error);
@@ -35,11 +49,21 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
   const handleCancelOrder = async (orderId: string) => {
     if (window.confirm('Are you sure you want to cancel this order?')) {
       try {
-        await ApiService.cancelOrder(orderId);
+        await apiService.cancelOrder(orderId);
         loadOrders(); // Reload orders
       } catch (error: any) {
         alert(error.message || 'Failed to cancel order');
       }
+    }
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await apiService.updateProfile(profileData);
+      alert('Profile updated successfully!');
+    } catch (error: any) {
+      alert(error.message || 'Failed to update profile');
     }
   };
 
@@ -59,7 +83,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
     );
   }
 
-  const favoriteProducts = products.filter(product => favorites.includes(product.id));
+  const favoriteProducts = favorites
+    .map(fav => fav.productId)
+    .filter(Boolean)
+    .map(productId => {
+      // If productId is an object, return it directly
+      if (typeof productId === 'object' && productId._id) {
+        return productId;
+      }
+      // If productId is a string, find the product in our local data
+      return products.find(p => p.id === productId);
+    })
+    .filter(Boolean);
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -130,30 +165,38 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                     <Settings className="w-5 h-5 mr-2" />
                     Account Information
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        value={user.name}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                      />
+                  <form onSubmit={handleUpdateProfile} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Full Name
+                        </label>
+                        <input
+                          type="text"
+                          value={profileData.name}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          value={profileData.email}
+                          onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        value={user.email}
-                        readOnly
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
-                      />
-                    </div>
-                  </div>
+                    <button
+                      type="submit"
+                      className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                    >
+                      Update Profile
+                    </button>
+                  </form>
                 </div>
 
                 <div>
@@ -161,11 +204,47 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                     <MapPin className="w-5 h-5 mr-2" />
                     Shipping Address
                   </h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-600">No shipping address saved yet.</p>
-                    <button className="mt-2 text-amber-600 hover:text-amber-700 font-semibold">
-                      Add Address
-                    </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Street Address"
+                      value={profileData.address.street}
+                      onChange={(e) => setProfileData(prev => ({ 
+                        ...prev, 
+                        address: { ...prev.address, street: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="City"
+                      value={profileData.address.city}
+                      onChange={(e) => setProfileData(prev => ({ 
+                        ...prev, 
+                        address: { ...prev.address, city: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="State"
+                      value={profileData.address.state}
+                      onChange={(e) => setProfileData(prev => ({ 
+                        ...prev, 
+                        address: { ...prev.address, state: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                    <input
+                      type="text"
+                      placeholder="ZIP Code"
+                      value={profileData.address.zipCode}
+                      onChange={(e) => setProfileData(prev => ({ 
+                        ...prev, 
+                        address: { ...prev.address, zipCode: e.target.value }
+                      }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
                   </div>
                 </div>
               </div>
@@ -244,7 +323,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                 {favoriteProducts.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {favoriteProducts.map((product) => (
-                      <div key={product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div key={product._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <img
                           src={product.images[0]}
                           alt={product.name}
@@ -253,7 +332,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                         <h4 className="font-semibold mb-2">{product.name}</h4>
                         <p className="text-amber-900 font-bold">${product.price.toFixed(2)}</p>
                         <button
-                          onClick={() => onNavigate('product-detail', product.id)}
+                          onClick={() => onNavigate('product-detail', product._id)}
                           className="mt-3 w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg font-semibold transition-colors"
                         >
                           View Details

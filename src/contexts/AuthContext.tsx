@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
-import ApiService from '../services/api';
+import apiService from '../services/api';
 
 interface AuthContextType {
   user: User | null;
@@ -8,9 +8,11 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  favorites: string[];
-  addToFavorites: (productId: string) => void;
-  removeFromFavorites: (productId: string) => void;
+  favorites: any[];
+  addToFavorites: (productId: string) => Promise<void>;
+  removeFromFavorites: (productId: string) => Promise<void>;
+  loadFavorites: () => Promise<void>;
+  isFavorite: (productId: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
 
   useEffect(() => {
     // Load user data and check token validity
@@ -26,31 +28,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          ApiService.setToken(token);
-          const response = await ApiService.getCurrentUser();
+          apiService.setToken(token);
+          const response = await apiService.getCurrentUser();
           setUser(response.user);
+          await loadFavorites();
         } catch (error) {
           console.error('Token validation failed:', error);
           localStorage.removeItem('token');
-          ApiService.setToken(null);
+          apiService.setToken(null);
         }
       }
       setLoading(false);
     };
 
     initAuth();
-
-    // Load favorites from localStorage
-    const savedFavorites = localStorage.getItem('favorites');
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
   }, []);
+
+  const loadFavorites = async () => {
+    try {
+      const favoritesData = await apiService.getFavorites();
+      setFavorites(favoritesData);
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+      setFavorites([]);
+    }
+  };
+
+  const isFavorite = (productId: string): boolean => {
+    return favorites.some(fav => 
+      (fav.productId && fav.productId._id === productId) || 
+      (fav.productId === productId)
+    );
+  };
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await ApiService.login({ email, password });
+      const response = await apiService.login({ email, password });
       setUser(response.user);
+      await loadFavorites();
       return true;
     } catch (error: any) {
       console.error('Login error:', error);
@@ -60,8 +75,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      const response = await ApiService.register({ name, email, password, confirmPassword: password });
+      const response = await apiService.register({ name, email, password, confirmPassword: password });
       setUser(response.user);
+      await loadFavorites();
       return true;
     } catch (error) {
       console.error('Registration error:', error);
@@ -71,19 +87,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     setUser(null);
-    ApiService.logout();
+    setFavorites([]);
+    apiService.logout();
   };
 
-  const addToFavorites = (productId: string) => {
-    const newFavorites = [...favorites, productId];
-    setFavorites(newFavorites);
-    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+  const addToFavorites = async (productId: string) => {
+    if (!user) return;
+    try {
+      await apiService.addToFavorites(productId);
+      await loadFavorites();
+    } catch (error) {
+      console.error('Error adding to favorites:', error);
+      throw error;
+    }
   };
 
-  const removeFromFavorites = (productId: string) => {
-    const newFavorites = favorites.filter(id => id !== productId);
-    setFavorites(newFavorites);
-    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+  const removeFromFavorites = async (productId: string) => {
+    if (!user) return;
+    try {
+      await apiService.removeFromFavorites(productId);
+      await loadFavorites();
+    } catch (error) {
+      console.error('Error removing from favorites:', error);
+      throw error;
+    }
   };
 
   return (
@@ -95,7 +122,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       logout,
       favorites,
       addToFavorites,
-      removeFromFavorites
+      removeFromFavorites,
+      loadFavorites,
+      isFavorite
     }}>
       {children}
     </AuthContext.Provider>
