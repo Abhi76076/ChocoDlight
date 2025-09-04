@@ -23,31 +23,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [favorites, setFavorites] = useState<any[]>([]);
 
   useEffect(() => {
-    // Load user data and check token validity
-    const initAuth = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          apiService.setToken(token);
-          const response = await apiService.getCurrentUser();
-          setUser(response.user);
-          await loadFavorites();
-        } catch (error) {
-          console.error('Token validation failed:', error);
-          localStorage.removeItem('token');
-          apiService.setToken(null);
-        }
-      }
-      setLoading(false);
-    };
-
     initAuth();
   }, []);
+
+  const initAuth = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        apiService.setToken(token);
+        const response = await apiService.getCurrentUser();
+        setUser(response.user);
+        await loadFavorites();
+      } catch (error) {
+        console.error('Token validation failed:', error);
+        localStorage.removeItem('token');
+        apiService.setToken(null);
+      }
+    }
+    setLoading(false);
+  };
 
   const loadFavorites = async () => {
     try {
       const favoritesData = await apiService.getFavorites();
-      setFavorites(favoritesData);
+      console.log('Loaded favorites:', favoritesData);
+      setFavorites(favoritesData || []);
     } catch (error) {
       console.error('Error loading favorites:', error);
       setFavorites([]);
@@ -55,10 +55,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const isFavorite = (productId: string): boolean => {
-    return favorites.some(fav => 
-      (fav.productId && fav.productId._id === productId) || 
-      (fav.productId === productId)
-    );
+    if (!favorites || favorites.length === 0) return false;
+    
+    return favorites.some(fav => {
+      if (fav.productId) {
+        // If productId is an object with _id
+        if (typeof fav.productId === 'object' && fav.productId._id) {
+          return fav.productId._id === productId;
+        }
+        // If productId is a string
+        return fav.productId === productId;
+      }
+      return false;
+    });
   };
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -92,24 +101,32 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const addToFavorites = async (productId: string) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('Please login to add favorites');
+    }
+    
     try {
+      console.log('Adding to favorites:', productId);
       await apiService.addToFavorites(productId);
       await loadFavorites();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to favorites:', error);
-      throw error;
+      throw new Error(error.message || 'Failed to add to favorites');
     }
   };
 
   const removeFromFavorites = async (productId: string) => {
-    if (!user) return;
+    if (!user) {
+      throw new Error('Please login to manage favorites');
+    }
+    
     try {
+      console.log('Removing from favorites:', productId);
       await apiService.removeFromFavorites(productId);
       await loadFavorites();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error removing from favorites:', error);
-      throw error;
+      throw new Error(error.message || 'Failed to remove from favorites');
     }
   };
 

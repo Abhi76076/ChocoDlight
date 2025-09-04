@@ -34,17 +34,20 @@ class ApiService {
     };
 
     try {
+      console.log(`Making request to: ${url}`, config);
       const response = await fetch(url, config);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        console.error('API Error:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       
       const data = await response.json();
-
+      console.log('API Response:', data);
       return data;
     } catch (error) {
+      console.error('Request failed:', error);
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
         throw new Error('Unable to connect to server. Please make sure the backend is running.');
       }
@@ -97,6 +100,13 @@ class ApiService {
     return await this.request('/auth/me');
   }
 
+  async updateProfile(profileData) {
+    return await this.request('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
   // Product methods
   async getProducts() {
     return await this.request('/products');
@@ -126,12 +136,64 @@ class ApiService {
     });
   }
 
+  // Cart methods
+  async getCart() {
+    try {
+      const response = await this.request('/cart');
+      console.log('Get cart response:', response);
+      return response || { items: [], total: 0 };
+    } catch (error) {
+      console.error('Get cart error:', error);
+      return { items: [], total: 0 };
+    }
+  }
+
+  async addToCart(productId, quantity = 1) {
+    console.log('API: Adding to cart:', { productId, quantity });
+    const response = await this.request('/cart/add', {
+      method: 'POST',
+      body: JSON.stringify({ productId, quantity }),
+    });
+    console.log('API: Add to cart response:', response);
+    return response;
+  }
+
+  async updateCartItem(productId, quantity) {
+    console.log('API: Updating cart item:', { productId, quantity });
+    const response = await this.request('/cart/update', {
+      method: 'PUT',
+      body: JSON.stringify({ productId, quantity }),
+    });
+    console.log('API: Update cart response:', response);
+    return response;
+  }
+
+  async removeFromCart(productId) {
+    console.log('API: Removing from cart:', productId);
+    const response = await this.request(`/cart/remove/${productId}`, {
+      method: 'DELETE',
+    });
+    console.log('API: Remove from cart response:', response);
+    return response;
+  }
+
+  async clearCart() {
+    const response = await this.request('/cart/clear', {
+      method: 'DELETE',
+    });
+    console.log('API: Clear cart response:', response);
+    return response;
+  }
+
   // Order methods
   async createOrder(orderData) {
-    return await this.request('/orders', {
+    console.log('API: Creating order:', orderData);
+    const response = await this.request('/orders', {
       method: 'POST',
       body: JSON.stringify(orderData),
     });
+    console.log('API: Create order response:', response);
+    return response;
   }
 
   async getMyOrders() {
@@ -142,6 +204,37 @@ class ApiService {
     return await this.request(`/orders/${orderId}/cancel`, {
       method: 'PATCH',
     });
+  }
+
+  // Favorites methods
+  async getFavorites() {
+    try {
+      const response = await this.request('/favorites');
+      console.log('Get favorites response:', response);
+      return response || [];
+    } catch (error) {
+      console.error('Get favorites error:', error);
+      return [];
+    }
+  }
+
+  async addToFavorites(productId) {
+    console.log('API: Adding to favorites:', productId);
+    const response = await this.request('/favorites/add', {
+      method: 'POST',
+      body: JSON.stringify({ productId }),
+    });
+    console.log('API: Add to favorites response:', response);
+    return response;
+  }
+
+  async removeFromFavorites(productId) {
+    console.log('API: Removing from favorites:', productId);
+    const response = await this.request(`/favorites/remove/${productId}`, {
+      method: 'DELETE',
+    });
+    console.log('API: Remove from favorites response:', response);
+    return response;
   }
 
   // Admin methods
@@ -177,69 +270,6 @@ class ApiService {
     });
   }
 
-  logout() {
-    this.setToken(null);
-  }
-
-  // Cart methods
-  async getCart() {
-    try {
-      return await this.request('/cart');
-    } catch (error) {
-      console.error('Get cart error:', error);
-      return { items: [], total: 0 };
-    }
-  }
-
-  async addToCart(productId, quantity = 1) {
-    return await this.request('/cart/add', {
-      method: 'POST',
-      body: JSON.stringify({ productId, quantity }),
-    });
-  }
-
-  async updateCartItem(productId, quantity) {
-    return await this.request('/cart/update', {
-      method: 'PUT',
-      body: JSON.stringify({ productId, quantity }),
-    });
-  }
-
-  async removeFromCart(productId) {
-    return await this.request(`/cart/remove/${productId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async clearCart() {
-    return await this.request('/cart/clear', {
-      method: 'DELETE',
-    });
-  }
-
-  // Favorites methods
-  async getFavorites() {
-    try {
-      return await this.request('/favorites');
-    } catch (error) {
-      console.error('Get favorites error:', error);
-      return [];
-    }
-  }
-
-  async addToFavorites(productId) {
-    return await this.request('/favorites/add', {
-      method: 'POST',
-      body: JSON.stringify({ productId }),
-    });
-  }
-
-  async removeFromFavorites(productId) {
-    return await this.request(`/favorites/remove/${productId}`, {
-      method: 'DELETE',
-    });
-  }
-
   // Reviews methods
   async getProductReviews(productId) {
     return await this.request(`/reviews/product/${productId}`);
@@ -252,12 +282,8 @@ class ApiService {
     });
   }
 
-  // User profile methods
-  async updateProfile(profileData) {
-    return await this.request('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(profileData),
-    });
+  logout() {
+    this.setToken(null);
   }
 }
 

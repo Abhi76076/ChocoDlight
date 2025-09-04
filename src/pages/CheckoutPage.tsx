@@ -52,20 +52,33 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
       return;
     }
 
+    if (state.items.length === 0) {
+      setError('Your cart is empty');
+      return;
+    }
+
     setIsProcessing(true);
     setError('');
     
     try {
+      console.log('Creating order with items:', state.items);
+      
       const orderData = {
         items: state.items.map(item => ({
           productId: item.product.id,
-          quantity: item.quantity
+          quantity: item.quantity,
+          price: item.product.price
         })),
+        total: finalTotal,
         shippingAddress,
         paymentMethod
       };
 
-      await apiService.createOrder(orderData);
+      console.log('Order data:', orderData);
+      
+      const response = await apiService.createOrder(orderData);
+      console.log('Order created:', response);
+      
       await clearCart();
       onNavigate('order-success');
     } catch (error: any) {
@@ -81,6 +94,22 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
     { number: 2, title: 'Payment Method', icon: CreditCard },
     { number: 3, title: 'Review Order', icon: Shield }
   ];
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Please sign in to checkout</h2>
+          <button
+            onClick={() => onNavigate('login')}
+            className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg"
+          >
+            Sign In
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (state.items.length === 0) {
     return (
@@ -151,55 +180,59 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Street Address
+                      Street Address *
                     </label>
                     <input
                       type="text"
                       value={shippingAddress.street}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Enter your street address"
                       required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      City
+                      City *
                     </label>
                     <input
                       type="text"
                       value={shippingAddress.city}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, city: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Enter your city"
                       required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      State
+                      State *
                     </label>
                     <input
                       type="text"
                       value={shippingAddress.state}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, state: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Enter your state"
                       required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      ZIP Code
+                      ZIP Code *
                     </label>
                     <input
                       type="text"
                       value={shippingAddress.zipCode}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, zipCode: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      placeholder="Enter your ZIP code"
                       required
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Country
+                      Country *
                     </label>
                     <select
                       value={shippingAddress.country}
@@ -245,7 +278,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                     <div className="ml-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Card Number
+                          Card Number *
                         </label>
                         <input
                           type="text"
@@ -258,7 +291,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Expiry Date
+                          Expiry Date *
                         </label>
                         <input
                           type="text"
@@ -271,7 +304,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          CVV
+                          CVV *
                         </label>
                         <input
                           type="text"
@@ -284,12 +317,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       </div>
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Cardholder Name
+                          Cardholder Name *
                         </label>
                         <input
                           type="text"
                           value={cardDetails.name}
                           onChange={(e) => setCardDetails(prev => ({ ...prev, name: e.target.value }))}
+                          placeholder="Enter cardholder name"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                           required
                         />
@@ -348,6 +382,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                 
                 {/* Order Items */}
                 <div className="space-y-4 mb-6">
+                  <h3 className="font-semibold text-gray-900">Order Items</h3>
                   {state.items.map((item) => (
                     <div key={item.product.id} className="flex items-center space-x-4 py-4 border-b">
                       <img
@@ -358,6 +393,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       <div className="flex-1">
                         <h4 className="font-medium">{item.product.name}</h4>
                         <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                        <p className="text-sm text-gray-600">Price: ${item.product.price.toFixed(2)} each</p>
                       </div>
                       <div className="text-right">
                         <p className="font-semibold">${(item.product.price * item.quantity).toFixed(2)}</p>
@@ -399,7 +435,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                     disabled={isProcessing}
                     className="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
                   >
-                    {isProcessing ? 'Processing...' : 'Place Order'}
+                    {isProcessing ? 'Processing Order...' : `Place Order - $${finalTotal.toFixed(2)}`}
                   </button>
                 </div>
               </div>
@@ -417,7 +453,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                 </div>
               ))}
             </div>
-            <div className="space-y-2 text-sm">
+            <div className="space-y-2 text-sm border-t pt-4">
               <div className="flex justify-between">
                 <span>Subtotal</span>
                 <span>${state.total.toFixed(2)}</span>
@@ -427,7 +463,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                 <span>${shipping.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax</span>
+                <span>Tax (8%)</span>
                 <span>${tax.toFixed(2)}</span>
               </div>
               <div className="border-t pt-2 flex justify-between font-semibold text-lg">

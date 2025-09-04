@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Star, Heart, ShoppingCart } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
@@ -12,8 +12,10 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails }) => {
   const { addItem } = useCart();
   const { user, isFavorite, addToFavorites, removeFromFavorites } = useAuth();
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
   
-  const isProductFavorite = isFavorite(product.id);
+  const isProductFavorite = user ? isFavorite(product.id) : false;
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -28,13 +30,35 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
       return;
     }
 
+    setIsAddingToCart(true);
     try {
-      await addItem(product);
-      // Show success message without alert
-      console.log('Item added to cart successfully');
-    } catch (error) {
+      console.log('Adding product to cart:', product.id);
+      await addItem(product, 1);
+      console.log('Successfully added to cart');
+      
+      // Show success notification
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all';
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+          </svg>
+          Item added to cart!
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 3000);
+    } catch (error: any) {
       console.error('Error adding to cart:', error);
-      alert('Failed to add item to cart. Please try again.');
+      alert(error.message || 'Failed to add item to cart. Please try again.');
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
@@ -46,16 +70,44 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
       return;
     }
 
+    setIsTogglingFavorite(true);
     try {
+      console.log('Toggling favorite for product:', product.id);
+      
       if (isProductFavorite) {
         await removeFromFavorites(product.id);
-        alert('Removed from favorites');
+        console.log('Removed from favorites');
+        
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Removed from favorites!';
+        document.body.appendChild(notification);
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 3000);
       } else {
         await addToFavorites(product.id);
-        alert('Added to favorites');
+        console.log('Added to favorites');
+        
+        // Show success notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        notification.textContent = 'Added to favorites!';
+        document.body.appendChild(notification);
+        setTimeout(() => {
+          if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        }, 3000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error managing favorites:', error);
+      alert(error.message || 'Failed to update favorites. Please try again.');
+    } finally {
+      setIsTogglingFavorite(false);
     }
   };
 
@@ -83,10 +135,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
         {user && (
           <button
             onClick={handleToggleFavorite}
-            className={`absolute top-2 right-2 p-2 rounded-full transition-colors ${
+            disabled={isTogglingFavorite}
+            className={`absolute top-2 right-2 p-2 rounded-full transition-all duration-200 disabled:opacity-50 ${
               isProductFavorite 
-                ? 'bg-red-500 text-white' 
-                : 'bg-white text-gray-600 hover:bg-gray-100'
+                ? 'bg-red-500 text-white shadow-lg' 
+                : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
             }`}
           >
             <Heart className={`w-4 h-4 ${isProductFavorite ? 'fill-current' : ''}`} />
@@ -136,10 +189,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
           {user ? (
             <button
               onClick={handleAddToCart}
-              disabled={!product.inStock}
-              className={`p-2 rounded-full transition-colors ${
-                product.inStock
-                  ? 'bg-amber-600 hover:bg-amber-700 text-white'
+              disabled={!product.inStock || isAddingToCart}
+              className={`p-2 rounded-full transition-all duration-200 disabled:opacity-50 ${
+                product.inStock && !isAddingToCart
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-md hover:shadow-lg'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >

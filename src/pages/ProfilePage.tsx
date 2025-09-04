@@ -38,9 +38,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
     try {
       setLoading(true);
       const ordersData = await apiService.getMyOrders();
-      setOrders(ordersData);
+      console.log('Loaded orders:', ordersData);
+      setOrders(ordersData || []);
     } catch (error) {
       console.error('Error loading orders:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -83,16 +85,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
     );
   }
 
+  // Get favorite products with proper error handling
   const favoriteProducts = favorites
-    .map(fav => fav.productId)
-    .filter(Boolean)
-    .map(productId => {
-      // If productId is an object, return it directly
-      if (typeof productId === 'object' && productId._id) {
-        return productId;
+    .map(fav => {
+      if (fav.productId) {
+        // If productId is an object (populated), return it directly
+        if (typeof fav.productId === 'object' && fav.productId._id) {
+          return fav.productId;
+        }
+        // If productId is a string, find the product in our local data
+        return products.find(p => p.id === fav.productId);
       }
-      // If productId is a string, find the product in our local data
-      return products.find(p => p.id === productId);
+      return null;
     })
     .filter(Boolean);
 
@@ -125,6 +129,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                 <div>
                   <h1 className="text-2xl font-bold">{user.name}</h1>
                   <p className="opacity-90">{user.email}</p>
+                  {user.role === 'admin' && (
+                    <span className="bg-white bg-opacity-20 px-2 py-1 rounded text-sm">Admin</span>
+                  )}
                 </div>
               </div>
               <button
@@ -294,7 +301,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                           <h4 className="font-medium mb-2">Items:</h4>
                           {order.items.map((item: any, index: number) => (
                             <div key={index} className="flex justify-between text-sm text-gray-600">
-                              <span>{item.product?.name} x {item.quantity}</span>
+                              <span>{item.product?.name || 'Unknown Product'} x {item.quantity}</span>
                               <span>${(item.price * item.quantity).toFixed(2)}</span>
                             </div>
                           ))}
@@ -323,7 +330,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                 {favoriteProducts.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {favoriteProducts.map((product) => (
-                      <div key={product._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                      <div key={product._id || product.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                         <img
                           src={product.images[0]}
                           alt={product.name}
@@ -332,7 +339,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
                         <h4 className="font-semibold mb-2">{product.name}</h4>
                         <p className="text-amber-900 font-bold">${product.price.toFixed(2)}</p>
                         <button
-                          onClick={() => onNavigate('product-detail', product._id)}
+                          onClick={() => onNavigate('product-detail', product._id || product.id)}
                           className="mt-3 w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg font-semibold transition-colors"
                         >
                           View Details
