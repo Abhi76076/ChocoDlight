@@ -1,8 +1,8 @@
-# ChocoDelight - Premium Chocolate E-commerce Platform 🍫
+# ChocoDlight - Premium Chocolate E-commerce Platform 🍫
 
 A modern, full-stack e-commerce application for premium chocolate shopping built with React, TypeScript, Node.js, Express, and MongoDB. Features a beautiful, responsive design with comprehensive shopping cart, user authentication, and admin management capabilities.
 
-![ChocoDelight Banner](https://images.pexels.com/photos/918327/pexels-photo-918327.jpeg?auto=compress&cs=tinysrgb&w=1200)
+![ChocoDlight Banner](https://images.pexels.com/photos/918327/pexels-photo-918327.jpeg?auto=compress&cs=tinysrgb&w=1200)
 
 ## 🌟 Live Demo
 
@@ -76,7 +76,7 @@ A modern, full-stack e-commerce application for premium chocolate shopping built
 ### 1. **Clone Repository**
 ```bash
 git clone https://github.com/Abhi76076/ChocoDlight.git
-cd chocodelght
+cd ChocoDlight
 ```
 
 ### 2. **Install Dependencies**
@@ -201,7 +201,7 @@ npm run client      # Frontend only
 ## 🗂️ Project Structure
 
 ```
-chocodelght/
+ChocoDlight/
 ├── server/                   # Backend application
 │   ├── config/
 │   │   └── database.js      # MongoDB connection
@@ -416,8 +416,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support, questions, or feature requests:
 
-- **GitHub Issues**: [Create an issue](https://github.com/yourusername/chocodelght/issues)
-- **Email**: support@chocodelght.com
+- **GitHub Issues**: [Create an issue](https://github.com/yourusername/ChocoDlight/issues)
+- **Email**: support@ChocoDlight.com
 - **Documentation**: Check this README and inline code comments
 
 ## 🙏 Acknowledgments
