@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Star, Heart, ShoppingCart } from 'lucide-react';
+import { Star, Heart, ShoppingCart, Eye } from 'lucide-react';
 import { Product } from '../types';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface ProductCardProps {
   product: Product;
@@ -14,6 +15,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
   const { user, isFavorite, addToFavorites, removeFromFavorites } = useAuth();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
   const isProductFavorite = user ? isFavorite(product.id) : false;
 
@@ -32,31 +35,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
 
     setIsAddingToCart(true);
     try {
-      console.log('Adding product to cart:', product.id);
       await addItem(product, 1);
-      console.log('Successfully added to cart');
-      
-      // Show success notification
-      const notification = document.createElement('div');
-      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all';
-      notification.innerHTML = `
-        <div class="flex items-center">
-          <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-          </svg>
-          Item added to cart!
-        </div>
-      `;
-      document.body.appendChild(notification);
-      
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 3000);
     } catch (error: any) {
       console.error('Error adding to cart:', error);
-      alert(error.message || 'Failed to add item to cart. Please try again.');
     } finally {
       setIsAddingToCart(false);
     }
@@ -72,66 +53,88 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
 
     setIsTogglingFavorite(true);
     try {
-      console.log('Toggling favorite for product:', product.id);
-      
       if (isProductFavorite) {
         await removeFromFavorites(product.id);
-        console.log('Removed from favorites');
-        
-        // Show success notification
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-        notification.textContent = 'Removed from favorites!';
-        document.body.appendChild(notification);
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-          }
-        }, 3000);
       } else {
         await addToFavorites(product.id);
-        console.log('Added to favorites');
-        
-        // Show success notification
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-        notification.textContent = 'Added to favorites!';
-        document.body.appendChild(notification);
-        setTimeout(() => {
-          if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-          }
-        }, 3000);
       }
     } catch (error: any) {
       console.error('Error managing favorites:', error);
-      alert(error.message || 'Failed to update favorites. Please try again.');
     } finally {
       setIsTogglingFavorite(false);
     }
   };
 
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
   return (
     <div 
-      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group overflow-hidden"
+      className="bg-white rounded-lg shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer group overflow-hidden transform hover:-translate-y-1"
       onClick={() => onViewDetails(product)}
     >
-      <div className="relative overflow-hidden">
-        <img
-          src={product.images[0]}
-          alt={product.name}
-          className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
-        />
+      <div className="relative overflow-hidden bg-gray-100">
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <LoadingSpinner size="small" message="" />
+          </div>
+        )}
+        
+        {imageError ? (
+          <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <div className="text-2xl mb-2">🍫</div>
+              <p className="text-sm">Image not available</p>
+            </div>
+          </div>
+        ) : (
+          <img
+            src={product.images[0]}
+            alt={product.name}
+            className={`w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+          />
+        )}
+        
+        {/* Overlay buttons */}
+        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails(product);
+            }}
+            className="bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex items-center mx-2"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            View Details
+          </button>
+        </div>
+        
+        {/* Sale badge */}
         {product.originalPrice && (
           <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm font-semibold">
             Sale
           </div>
         )}
+        
+        {/* Out of stock overlay */}
         {!product.inStock && (
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <span className="text-white font-semibold text-lg">Out of Stock</span>
+            <span className="text-white font-semibold text-lg bg-red-600 px-4 py-2 rounded-lg">
+              Out of Stock
+            </span>
           </div>
         )}
+        
+        {/* Favorite button */}
         {user && (
           <button
             onClick={handleToggleFavorite}
@@ -142,13 +145,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
                 : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
             }`}
           >
-            <Heart className={`w-4 h-4 ${isProductFavorite ? 'fill-current' : ''}`} />
+            {isTogglingFavorite ? (
+              <LoadingSpinner size="small" message="" />
+            ) : (
+              <Heart className={`w-4 h-4 ${isProductFavorite ? 'fill-current' : ''}`} />
+            )}
           </button>
         )}
       </div>
       
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2 group-hover:text-amber-600 transition-colors">
           {product.name}
         </h3>
         
@@ -170,7 +177,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
             ))}
           </div>
           <span className="text-sm text-gray-600 ml-2">
-            ({product.reviewCount})
+            {product.rating.toFixed(1)} ({product.reviewCount})
           </span>
         </div>
         
@@ -190,13 +197,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
             <button
               onClick={handleAddToCart}
               disabled={!product.inStock || isAddingToCart}
-              className={`p-2 rounded-full transition-all duration-200 disabled:opacity-50 ${
+              className={`p-2 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
                 product.inStock && !isAddingToCart
-                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-md hover:shadow-lg'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-md hover:shadow-lg transform hover:scale-105'
+                  : 'bg-gray-300 text-gray-500'
               }`}
             >
-              <ShoppingCart className="w-4 h-4" />
+              {isAddingToCart ? (
+                <LoadingSpinner size="small" message="" />
+              ) : (
+                <ShoppingCart className="w-4 h-4" />
+              )}
             </button>
           ) : (
             <button
@@ -204,7 +215,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
                 e.stopPropagation();
                 alert('Please login to add items to cart');
               }}
-              className="p-2 rounded-full bg-gray-300 text-gray-500 transition-colors"
+              className="p-2 rounded-full bg-gray-300 text-gray-500 transition-colors hover:bg-gray-400"
             >
               <ShoppingCart className="w-4 h-4" />
             </button>

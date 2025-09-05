@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ArrowLeft, CreditCard, Truck, Shield } from 'lucide-react';
+import { ArrowLeft, CreditCard, Truck, Shield, CheckCircle } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Address } from '../types';
 import apiService from '../services/api';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 interface CheckoutPageProps {
   onNavigate: (page: string) => void;
@@ -15,13 +16,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
 
   const [shippingAddress, setShippingAddress] = useState<Address>({
     street: user?.address?.street || '',
     city: user?.address?.city || '',
     state: user?.address?.state || '',
     zipCode: user?.address?.zipCode || '',
-    country: user?.address?.country || 'IN'
+    country: user?.address?.country || 'US'
   });
 
   const [paymentMethod, setPaymentMethod] = useState('credit-card');
@@ -36,19 +38,35 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   const tax = state.total * 0.08;
   const finalTotal = state.total + shipping + tax;
 
+  const validateStep = (step: number): boolean => {
+    const errors: {[key: string]: string} = {};
+    
+    if (step === 1) {
+      if (!shippingAddress.street.trim()) errors.street = 'Street address is required';
+      if (!shippingAddress.city.trim()) errors.city = 'City is required';
+      if (!shippingAddress.state.trim()) errors.state = 'State is required';
+      if (!shippingAddress.zipCode.trim()) errors.zipCode = 'ZIP code is required';
+    }
+    
+    if (step === 2 && paymentMethod === 'credit-card') {
+      if (!cardDetails.number.trim()) errors.cardNumber = 'Card number is required';
+      if (!cardDetails.expiry.trim()) errors.expiry = 'Expiry date is required';
+      if (!cardDetails.cvv.trim()) errors.cvv = 'CVV is required';
+      if (!cardDetails.name.trim()) errors.cardName = 'Cardholder name is required';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handlePlaceOrder = async () => {
     if (!user) {
       onNavigate('login');
       return;
     }
 
-    if (!shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zipCode) {
-      setError('Please fill in all shipping address fields');
-      return;
-    }
-
-    if (paymentMethod === 'credit-card' && (!cardDetails.number || !cardDetails.expiry || !cardDetails.cvv || !cardDetails.name)) {
-      setError('Please fill in all payment details');
+    if (!validateStep(1) || !validateStep(2)) {
+      setError('Please fill in all required fields');
       return;
     }
 
@@ -61,8 +79,6 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
     setError('');
     
     try {
-      console.log('Creating order with items:', state.items);
-      
       const orderData = {
         items: state.items.map(item => ({
           productId: item.product.id,
@@ -74,11 +90,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
         paymentMethod
       };
 
-      console.log('Order data:', orderData);
-      
       const response = await apiService.createOrder(orderData);
-      console.log('Order created:', response);
-      
       await clearCart();
       onNavigate('order-success');
     } catch (error: any) {
@@ -98,7 +110,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center bg-white p-8 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Please sign in to checkout</h2>
           <button
             onClick={() => onNavigate('login')}
@@ -114,7 +126,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
   if (state.items.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center bg-white p-8 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Your cart is empty</h2>
           <button
             onClick={() => onNavigate('shop')}
@@ -139,9 +151,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
           Back to Cart
         </button>
 
+        {/* Error Display */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
+            <div className="mr-3">⚠️</div>
+            <div>{error}</div>
           </div>
         )}
 
@@ -162,7 +176,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       : 'bg-gray-200 text-gray-400'
                   }`}
                 >
-                  <step.icon className="w-5 h-5" />
+                  {currentStep > step.number ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    <step.icon className="w-5 h-5" />
+                  )}
                 </div>
                 <span className="font-semibold hidden sm:inline">{step.title}</span>
               </div>
@@ -186,10 +204,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       type="text"
                       value={shippingAddress.street}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, street: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                        validationErrors.street ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter your street address"
-                      required
                     />
+                    {validationErrors.street && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.street}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -199,10 +221,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       type="text"
                       value={shippingAddress.city}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                        validationErrors.city ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter your city"
-                      required
                     />
+                    {validationErrors.city && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.city}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -212,10 +238,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       type="text"
                       value={shippingAddress.state}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, state: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                        validationErrors.state ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter your state"
-                      required
                     />
+                    {validationErrors.state && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.state}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -225,10 +255,14 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       type="text"
                       value={shippingAddress.zipCode}
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, zipCode: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                      className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                        validationErrors.zipCode ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="Enter your ZIP code"
-                      required
                     />
+                    {validationErrors.zipCode && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.zipCode}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -239,17 +273,20 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                       onChange={(e) => setShippingAddress(prev => ({ ...prev, country: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
                     >
-                      <option value="IN">India</option>
                       <option value="US">United States</option>
-                      <option value="UK">United Kingdom</option>
                       <option value="CA">Canada</option>
+                      <option value="UK">United Kingdom</option>
+                      <option value="AU">Australia</option>
                     </select>
                   </div>
                 </div>
                 <button
-                  onClick={() => setCurrentStep(2)}
-                  disabled={!shippingAddress.street || !shippingAddress.city || !shippingAddress.state || !shippingAddress.zipCode}
-                  className="mt-6 bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    if (validateStep(1)) {
+                      setCurrentStep(2);
+                    }
+                  }}
+                  className="mt-6 bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
                 >
                   Continue to Payment
                 </button>
@@ -285,9 +322,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                           value={cardDetails.number}
                           onChange={(e) => setCardDetails(prev => ({ ...prev, number: e.target.value }))}
                           placeholder="1234 5678 9012 3456"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                          required
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                            validationErrors.cardNumber ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
+                        {validationErrors.cardNumber && (
+                          <p className="text-red-500 text-sm mt-1">{validationErrors.cardNumber}</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -298,9 +339,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                           value={cardDetails.expiry}
                           onChange={(e) => setCardDetails(prev => ({ ...prev, expiry: e.target.value }))}
                           placeholder="MM/YY"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                          required
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                            validationErrors.expiry ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
+                        {validationErrors.expiry && (
+                          <p className="text-red-500 text-sm mt-1">{validationErrors.expiry}</p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -311,9 +356,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                           value={cardDetails.cvv}
                           onChange={(e) => setCardDetails(prev => ({ ...prev, cvv: e.target.value }))}
                           placeholder="123"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                          required
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                            validationErrors.cvv ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
+                        {validationErrors.cvv && (
+                          <p className="text-red-500 text-sm mt-1">{validationErrors.cvv}</p>
+                        )}
                       </div>
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -324,9 +373,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                           value={cardDetails.name}
                           onChange={(e) => setCardDetails(prev => ({ ...prev, name: e.target.value }))}
                           placeholder="Enter cardholder name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
-                          required
+                          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                            validationErrors.cardName ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
+                        {validationErrors.cardName && (
+                          <p className="text-red-500 text-sm mt-1">{validationErrors.cardName}</p>
+                        )}
                       </div>
                     </div>
                   )}
@@ -366,7 +419,11 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                     Back
                   </button>
                   <button
-                    onClick={() => setCurrentStep(3)}
+                    onClick={() => {
+                      if (validateStep(2)) {
+                        setCurrentStep(3);
+                      }
+                    }}
                     className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors"
                   >
                     Review Order
@@ -433,9 +490,16 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
                   <button
                     onClick={handlePlaceOrder}
                     disabled={isProcessing}
-                    className="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50"
+                    className="flex-1 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 flex items-center justify-center"
                   >
-                    {isProcessing ? 'Processing Order...' : `Place Order - $${finalTotal.toFixed(2)}`}
+                    {isProcessing ? (
+                      <>
+                        <LoadingSpinner size="small" message="" />
+                        <span className="ml-2">Processing Order...</span>
+                      </>
+                    ) : (
+                      `Place Order - $${finalTotal.toFixed(2)}`
+                    )}
                   </button>
                 </div>
               </div>
@@ -448,8 +512,8 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
             <div className="space-y-3 mb-4">
               {state.items.map((item) => (
                 <div key={item.product.id} className="flex justify-between text-sm">
-                  <span>{item.product.name} x {item.quantity}</span>
-                  <span>${(item.product.price * item.quantity).toFixed(2)}</span>
+                  <span className="truncate mr-2">{item.product.name} x {item.quantity}</span>
+                  <span className="font-medium">${(item.product.price * item.quantity).toFixed(2)}</span>
                 </div>
               ))}
             </div>
