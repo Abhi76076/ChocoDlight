@@ -416,7 +416,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support, questions, or feature requests:
 
-- **GitHub Issues**: [Create an issue](https://github.com/yourusername/ChocoDlight/issues)
+- **GitHub Issues**: [Create an issue](https://github.com/Abhi76076/ChocoDlight/issues)
 - **Email**: support@ChocoDlight.com
 - **Documentation**: Check this README and inline code comments
 
