@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, Package, ShoppingCart, Clock, Plus, Edit, Trash2 } from 'lucide-react';
-import apiService from '../services/api';
+import apiService from '../services/api.js';
 
 interface AdminDashboardProps {
   onNavigate: (page: string) => void;

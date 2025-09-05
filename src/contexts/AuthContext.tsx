@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
-import apiService from '../services/api';
+import apiService from '../services/api.js';
 
 interface AuthContextType {
   user: User | null;
@@ -65,8 +65,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (token) {
       try {
         apiService.setToken(token);
-        const response = await apiService.getCurrentUser();
-        setUser(response.user);
+        const userData = await apiService.getCurrentUser();
+        setUser(userData);
         await loadFavorites();
       } catch (error) {
         console.error('Token validation failed:', error);
@@ -118,7 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      const response = await apiService.register({ name, email, password, confirmPassword: password });
+      const response = await apiService.register({ name, email, password });
       setUser(response.user);
       await loadFavorites();
       showNotification(`Welcome to ChocoDelight, ${response.user.name}!`, 'success');

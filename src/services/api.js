@@ -282,6 +282,44 @@ class ApiService {
     });
   }
 
+  // Tree Data methods (for debugging/visualization)
+  async getTreeData(sessionId) {
+    try {
+      return await this.request(`/debug/tree-data/${sessionId}`);
+    } catch (error) {
+      console.warn('Tree data endpoint not available, returning empty array');
+      return [];
+    }
+  }
+
+  async saveTreeData(treeData) {
+    return await this.request('/debug/tree-data', {
+      method: 'POST',
+      body: JSON.stringify(treeData),
+    });
+  }
+
+  // Performance Metrics methods
+  async getPerformanceMetrics(timeRange = '1 hour') {
+    try {
+      return await this.request(`/debug/performance-metrics?range=${timeRange}`);
+    } catch (error) {
+      console.warn('Performance metrics endpoint not available, returning empty array');
+      return [];
+    }
+  }
+
+  async logPerformanceMetric(metric) {
+    try {
+      return await this.request('/debug/performance-metrics', {
+        method: 'POST',
+        body: JSON.stringify(metric),
+      });
+    } catch (error) {
+      console.warn('Performance metrics logging not available');
+    }
+  }
+
   logout() {
     this.setToken(null);
   }

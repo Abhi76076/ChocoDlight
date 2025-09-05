@@ -3,7 +3,7 @@ import { ArrowLeft, CreditCard, Truck, Shield, CheckCircle } from 'lucide-react'
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Address } from '../types';
-import apiService from '../services/api';
+import apiService from '../services/api.js';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 interface CheckoutPageProps {
