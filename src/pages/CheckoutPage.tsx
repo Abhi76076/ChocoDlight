@@ -3,7 +3,7 @@ import { ArrowLeft, CreditCard, Truck, Shield, CheckCircle } from 'lucide-react'
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { Address } from '../types';
-import apiService from '../services/api.js';
+import apiService from '../services/api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 
 interface CheckoutPageProps {
@@ -90,7 +90,9 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ onNavigate }) => {
         paymentMethod
       };
 
+      console.log('Creating order with data:', orderData);
       const response = await apiService.createOrder(orderData);
+      console.log('Order created successfully:', response);
       await clearCart();
       onNavigate('order-success');
     } catch (error: any) {

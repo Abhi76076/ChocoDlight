@@ -189,15 +189,50 @@ router.post('/reset-password', async (req, res) => {
 
 // Get current user
 router.get('/me', auth, async (req, res) => {
-  res.json({
-    user: {
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      address: req.user.address
+  try {
+    res.json({
+      user: {
+        id: req.user._id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+        address: req.user.address
+      }
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update user profile
+router.put('/profile', auth, async (req, res) => {
+  try {
+    const { name, email, address } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, email, address },
+      { new: true, runValidators: true }
+    ).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
-  });
+    
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        address: user.address
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
 });
 
 export default router;

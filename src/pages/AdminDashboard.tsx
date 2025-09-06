@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Users, Package, ShoppingCart, Clock, Plus, Edit, Trash2 } from 'lucide-react';
-import apiService from '../services/api.js';
+import apiService from '../services/api';
 
 interface AdminDashboardProps {
   onNavigate: (page: string) => void;
@@ -41,18 +41,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) =>
     try {
       setLoading(true);
       const [dashboardData, productsData, customersData, ordersData] = await Promise.all([
-        apiService.getDashboardStats(),
-        apiService.getProducts(),
-        apiService.getCustomers(),
-        apiService.getAllOrders()
+        apiService.getDashboardStats().catch(() => ({ stats: { totalCustomers: 0, totalProducts: 0, totalOrders: 0, pendingOrders: 0 } })),
+        apiService.getProducts().catch(() => []),
+        apiService.getCustomers().catch(() => []),
+        apiService.getAllOrders().catch(() => [])
       ]);
 
-      setStats(dashboardData.stats);
-      setProducts(productsData);
-      setCustomers(customersData);
-      setOrders(ordersData);
+      setStats(dashboardData.stats || { totalCustomers: 0, totalProducts: 0, totalOrders: 0, pendingOrders: 0 });
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      setCustomers(Array.isArray(customersData) ? customersData : []);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
+      // Set default values on error
+      setStats({ totalCustomers: 0, totalProducts: 0, totalOrders: 0, pendingOrders: 0 });
+      setProducts([]);
+      setCustomers([]);
+      setOrders([]);
     } finally {
       setLoading(false);
     }

@@ -54,7 +54,12 @@ function App() {
 
   const handleSearch = (searchTerm: string) => {
     setGlobalSearchTerm(searchTerm);
+    // Navigate to shop page when searching
+    if (searchTerm.trim()) {
+      setCurrentPage('shop');
+    }
   };
+  
   const renderPage = () => {
     switch (currentPage) {
       case 'home':

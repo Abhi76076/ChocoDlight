@@ -187,6 +187,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       throw new Error('This product is out of stock');
     }
     
+    dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
     // Optimistic update
     dispatch({ type: 'ADD_ITEM_OPTIMISTIC', payload: { product, quantity } });
     showNotification(`${product.name} added to cart!`, 'success');
@@ -229,6 +232,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await loadCart();
       showNotification('Failed to add item to cart. Please try again.', 'error');
       throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 

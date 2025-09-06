@@ -29,8 +29,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  role?: 'customer' | 'admin';
   address?: Address;
-  role?: string;
 }
 
 export interface Address {
@@ -46,9 +46,11 @@ export interface Order {
   userId: string;
   items: CartItem[];
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered';
+  status: 'pending' | 'confirmed' | 'processing' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: string;
   shippingAddress: Address;
+  paymentMethod?: string;
+  canCancel?: boolean;
 }
 
 export interface Review {

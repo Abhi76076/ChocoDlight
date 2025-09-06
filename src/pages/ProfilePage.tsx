@@ -39,7 +39,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
       setLoading(true);
       const ordersData = await apiService.getMyOrders();
       console.log('Loaded orders:', ordersData);
-      setOrders(ordersData || []);
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
     } catch (error) {
       console.error('Error loading orders:', error);
       setOrders([]);
