@@ -12,7 +12,7 @@ import adminRoutes from './routes/admin.js';
 import cartRoutes from './routes/cart.js';
 import favoriteRoutes from './routes/favorites.js';
 import reviewRoutes from './routes/reviews.js';
-import debugRoutes from './routes/debug.js';
+//import debugRoutes from './routes/debug.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,7 +43,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/debug', debugRoutes);
+//app.use('/api/debug', debugRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -69,7 +69,7 @@ app.use((err, req, res, next) => {
 });
 
 // Handle 404 routes
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
