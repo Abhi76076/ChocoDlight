@@ -29,8 +29,21 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role?: 'customer' | 'admin';
   address?: Address;
+  role: 'customer' | 'admin';
+}
+
+export interface AuthResponse {
+  user: User;
+  token: string;
+  message?: string;
+}
+
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
 }
 
 export interface Address {
@@ -46,11 +59,9 @@ export interface Order {
   userId: string;
   items: CartItem[];
   total: number;
-  status: 'pending' | 'confirmed' | 'processing' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered';
   createdAt: string;
   shippingAddress: Address;
-  paymentMethod?: string;
-  canCancel?: boolean;
 }
 
 export interface Review {

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '../types';
-import apiService from '../services/api';
+import { User, AuthResponse, RegisterRequest } from '../types';
+import apiService from '../services/api.js';
 
 interface AuthContextType {
   user: User | null;
@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await apiService.login({ email, password });
+      const response: AuthResponse = await apiService.login({ email, password });
       setUser(response.user);
       await loadFavorites();
       showNotification(`Welcome back, ${response.user.name}!`, 'success');
@@ -118,7 +118,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
-      const response = await apiService.register({ name, email, password, confirmPassword: password });
+      const registerData: RegisterRequest = { name, email, password, confirmPassword: password };
+      const response: AuthResponse = await apiService.register(registerData);
       setUser(response.user);
       await loadFavorites();
       showNotification(`Welcome to ChocoDelight, ${response.user.name}!`, 'success');

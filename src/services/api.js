@@ -38,12 +38,7 @@ class ApiService {
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          errorData = { message: `HTTP error! status: ${response.status}` };
-        }
+        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
         console.error('API Error:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
@@ -102,7 +97,8 @@ class ApiService {
   }
 
   async getCurrentUser() {
-    return await this.request('/auth/me');
+    const response = await this.request('/auth/me');
+    return response;
   }
 
   async updateProfile(profileData) {
