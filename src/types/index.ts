@@ -18,6 +18,7 @@ export interface Product {
   inStock: boolean;
   featured: boolean;
   popularity: number;
+  stockQuantity?: number;
 }
 
 export interface CartItem {
@@ -46,6 +47,11 @@ export interface RegisterRequest {
   confirmPassword: string;
 }
 
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface Address {
   street: string;
   city: string;
@@ -56,12 +62,21 @@ export interface Address {
 
 export interface Order {
   id: string;
+  _id?: string;
   userId: string;
-  items: CartItem[];
+  items: OrderItem[];
   total: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered';
+  status: 'pending' | 'confirmed' | 'processing' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: string;
   shippingAddress: Address;
+  paymentMethod: string;
+  canCancel?: boolean;
+}
+
+export interface OrderItem {
+  product: Product;
+  quantity: number;
+  price: number;
 }
 
 export interface Review {
@@ -71,5 +86,22 @@ export interface Review {
   userName: string;
   rating: number;
   comment: string;
+  createdAt: string;
+}
+
+export interface ApiError {
+  message: string;
+  status?: number;
+}
+
+export interface CartResponse {
+  items: CartItem[];
+  total: number;
+}
+
+export interface FavoriteItem {
+  id: string;
+  productId: Product | string;
+  userId: string;
   createdAt: string;
 }

@@ -38,7 +38,12 @@ class ApiService {
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Network error' }));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: `HTTP error! status: ${response.status}` };
+        }
         console.error('API Error:', errorData);
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
@@ -57,84 +62,139 @@ class ApiService {
 
   // Auth methods
   async register(userData) {
-    const response = await this.request('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
-    
-    if (response.token) {
-      this.setToken(response.token);
+    try {
+      const response = await this.request('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
+      
+      if (response.token) {
+        this.setToken(response.token);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
     }
-    
-    return response;
   }
 
   async login(credentials) {
-    const response = await this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
-    
-    if (response.token) {
-      this.setToken(response.token);
+    try {
+      const response = await this.request('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
+      
+      if (response.token) {
+        this.setToken(response.token);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
-    
-    return response;
   }
 
   async forgotPassword(data) {
-    return await this.request('/auth/forgot-password', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      return await this.request('/auth/forgot-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      throw error;
+    }
   }
 
   async resetPassword(data) {
-    return await this.request('/auth/reset-password', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    try {
+      return await this.request('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Reset password error:', error);
+      throw error;
+    }
   }
 
   async getCurrentUser() {
-    const response = await this.request('/auth/me');
-    return response;
+    try {
+      const response = await this.request('/auth/me');
+      return response.user ? response : { user: response };
+    } catch (error) {
+      console.error('Get current user error:', error);
+      throw error;
+    }
   }
 
   async updateProfile(profileData) {
-    return await this.request('/auth/profile', {
-      method: 'PUT',
-      body: JSON.stringify(profileData),
-    });
+    try {
+      return await this.request('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(profileData),
+      });
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
   }
 
   // Product methods
   async getProducts() {
-    return await this.request('/products');
+    try {
+      return await this.request('/products');
+    } catch (error) {
+      console.error('Get products error:', error);
+      return [];
+    }
   }
 
   async getProduct(id) {
-    return await this.request(`/products/${id}`);
+    try {
+      return await this.request(`/products/${id}`);
+    } catch (error) {
+      console.error('Get product error:', error);
+      throw error;
+    }
   }
 
   async createProduct(productData) {
-    return await this.request('/products', {
-      method: 'POST',
-      body: JSON.stringify(productData),
-    });
+    try {
+      return await this.request('/products', {
+        method: 'POST',
+        body: JSON.stringify(productData),
+      });
+    } catch (error) {
+      console.error('Create product error:', error);
+      throw error;
+    }
   }
 
   async updateProduct(id, productData) {
-    return await this.request(`/products/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(productData),
-    });
+    try {
+      return await this.request(`/products/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(productData),
+      });
+    } catch (error) {
+      console.error('Update product error:', error);
+      throw error;
+    }
   }
 
   async deleteProduct(id) {
-    return await this.request(`/products/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      return await this.request(`/products/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Delete product error:', error);
+      throw error;
+    }
   }
 
   // Cart methods
@@ -150,61 +210,96 @@ class ApiService {
   }
 
   async addToCart(productId, quantity = 1) {
-    console.log('API: Adding to cart:', { productId, quantity });
-    const response = await this.request('/cart/add', {
-      method: 'POST',
-      body: JSON.stringify({ productId, quantity }),
-    });
-    console.log('API: Add to cart response:', response);
-    return response;
+    try {
+      console.log('API: Adding to cart:', { productId, quantity });
+      const response = await this.request('/cart/add', {
+        method: 'POST',
+        body: JSON.stringify({ productId, quantity }),
+      });
+      console.log('API: Add to cart response:', response);
+      return response;
+    } catch (error) {
+      console.error('Add to cart error:', error);
+      throw error;
+    }
   }
 
   async updateCartItem(productId, quantity) {
-    console.log('API: Updating cart item:', { productId, quantity });
-    const response = await this.request('/cart/update', {
-      method: 'PUT',
-      body: JSON.stringify({ productId, quantity }),
-    });
-    console.log('API: Update cart response:', response);
-    return response;
+    try {
+      console.log('API: Updating cart item:', { productId, quantity });
+      const response = await this.request('/cart/update', {
+        method: 'PUT',
+        body: JSON.stringify({ productId, quantity }),
+      });
+      console.log('API: Update cart response:', response);
+      return response;
+    } catch (error) {
+      console.error('Update cart error:', error);
+      throw error;
+    }
   }
 
   async removeFromCart(productId) {
-    console.log('API: Removing from cart:', productId);
-    const response = await this.request(`/cart/remove/${productId}`, {
-      method: 'DELETE',
-    });
-    console.log('API: Remove from cart response:', response);
-    return response;
+    try {
+      console.log('API: Removing from cart:', productId);
+      const response = await this.request(`/cart/remove/${productId}`, {
+        method: 'DELETE',
+      });
+      console.log('API: Remove from cart response:', response);
+      return response;
+    } catch (error) {
+      console.error('Remove from cart error:', error);
+      throw error;
+    }
   }
 
   async clearCart() {
-    const response = await this.request('/cart/clear', {
-      method: 'DELETE',
-    });
-    console.log('API: Clear cart response:', response);
-    return response;
+    try {
+      const response = await this.request('/cart/clear', {
+        method: 'DELETE',
+      });
+      console.log('API: Clear cart response:', response);
+      return response;
+    } catch (error) {
+      console.error('Clear cart error:', error);
+      throw error;
+    }
   }
 
   // Order methods
   async createOrder(orderData) {
-    console.log('API: Creating order:', orderData);
-    const response = await this.request('/orders', {
-      method: 'POST',
-      body: JSON.stringify(orderData),
-    });
-    console.log('API: Create order response:', response);
-    return response;
+    try {
+      console.log('API: Creating order:', orderData);
+      const response = await this.request('/orders', {
+        method: 'POST',
+        body: JSON.stringify(orderData),
+      });
+      console.log('API: Create order response:', response);
+      return response;
+    } catch (error) {
+      console.error('Create order error:', error);
+      throw error;
+    }
   }
 
   async getMyOrders() {
-    return await this.request('/orders/my-orders');
+    try {
+      return await this.request('/orders/my-orders');
+    } catch (error) {
+      console.error('Get orders error:', error);
+      return [];
+    }
   }
 
   async cancelOrder(orderId) {
-    return await this.request(`/orders/${orderId}/cancel`, {
-      method: 'PATCH',
-    });
+    try {
+      return await this.request(`/orders/${orderId}/cancel`, {
+        method: 'PATCH',
+      });
+    } catch (error) {
+      console.error('Cancel order error:', error);
+      throw error;
+    }
   }
 
   // Favorites methods
@@ -212,7 +307,7 @@ class ApiService {
     try {
       const response = await this.request('/favorites');
       console.log('Get favorites response:', response);
-      return response || [];
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error('Get favorites error:', error);
       return [];
@@ -220,104 +315,116 @@ class ApiService {
   }
 
   async addToFavorites(productId) {
-    console.log('API: Adding to favorites:', productId);
-    const response = await this.request('/favorites/add', {
-      method: 'POST',
-      body: JSON.stringify({ productId }),
-    });
-    console.log('API: Add to favorites response:', response);
-    return response;
+    try {
+      console.log('API: Adding to favorites:', productId);
+      const response = await this.request('/favorites/add', {
+        method: 'POST',
+        body: JSON.stringify({ productId }),
+      });
+      console.log('API: Add to favorites response:', response);
+      return response;
+    } catch (error) {
+      console.error('Add to favorites error:', error);
+      throw error;
+    }
   }
 
   async removeFromFavorites(productId) {
-    console.log('API: Removing from favorites:', productId);
-    const response = await this.request(`/favorites/remove/${productId}`, {
-      method: 'DELETE',
-    });
-    console.log('API: Remove from favorites response:', response);
-    return response;
+    try {
+      console.log('API: Removing from favorites:', productId);
+      const response = await this.request(`/favorites/remove/${productId}`, {
+        method: 'DELETE',
+      });
+      console.log('API: Remove from favorites response:', response);
+      return response;
+    } catch (error) {
+      console.error('Remove from favorites error:', error);
+      throw error;
+    }
   }
 
   // Admin methods
   async getCustomers() {
-    return await this.request('/admin/customers');
+    try {
+      return await this.request('/admin/customers');
+    } catch (error) {
+      console.error('Get customers error:', error);
+      return [];
+    }
   }
 
   async updateCustomer(id, customerData) {
-    return await this.request(`/admin/customers/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(customerData),
-    });
+    try {
+      return await this.request(`/admin/customers/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(customerData),
+      });
+    } catch (error) {
+      console.error('Update customer error:', error);
+      throw error;
+    }
   }
 
   async deleteCustomer(id) {
-    return await this.request(`/admin/customers/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      return await this.request(`/admin/customers/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Delete customer error:', error);
+      throw error;
+    }
   }
 
   async getDashboardStats() {
-    return await this.request('/admin/dashboard');
+    try {
+      return await this.request('/admin/dashboard');
+    } catch (error) {
+      console.error('Get dashboard stats error:', error);
+      return { stats: { totalCustomers: 0, totalProducts: 0, totalOrders: 0, pendingOrders: 0 } };
+    }
   }
 
   async getAllOrders() {
-    return await this.request('/orders/admin/all');
+    try {
+      return await this.request('/orders/admin/all');
+    } catch (error) {
+      console.error('Get all orders error:', error);
+      return [];
+    }
   }
 
   async updateOrderStatus(orderId, status) {
-    return await this.request(`/orders/admin/${orderId}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    });
+    try {
+      return await this.request(`/orders/admin/${orderId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      });
+    } catch (error) {
+      console.error('Update order status error:', error);
+      throw error;
+    }
   }
 
   // Reviews methods
   async getProductReviews(productId) {
-    return await this.request(`/reviews/product/${productId}`);
+    try {
+      return await this.request(`/reviews/product/${productId}`);
+    } catch (error) {
+      console.error('Get product reviews error:', error);
+      return [];
+    }
   }
 
   async addReview(productId, rating, comment) {
-    return await this.request('/reviews', {
-      method: 'POST',
-      body: JSON.stringify({ productId, rating, comment }),
-    });
-  }
-
-  // Tree Data methods (for debugging/visualization)
-  async getTreeData(sessionId) {
     try {
-      return await this.request(`/debug/tree-data/${sessionId}`);
-    } catch (error) {
-      console.warn('Tree data endpoint not available, returning empty array');
-      return [];
-    }
-  }
-
-  async saveTreeData(treeData) {
-    return await this.request('/debug/tree-data', {
-      method: 'POST',
-      body: JSON.stringify(treeData),
-    });
-  }
-
-  // Performance Metrics methods
-  async getPerformanceMetrics(timeRange = '1 hour') {
-    try {
-      return await this.request(`/debug/performance-metrics?range=${timeRange}`);
-    } catch (error) {
-      console.warn('Performance metrics endpoint not available, returning empty array');
-      return [];
-    }
-  }
-
-  async logPerformanceMetric(metric) {
-    try {
-      return await this.request('/debug/performance-metrics', {
+      return await this.request('/reviews', {
         method: 'POST',
-        body: JSON.stringify(metric),
+        body: JSON.stringify({ productId, rating, comment }),
       });
     } catch (error) {
-      console.warn('Performance metrics logging not available');
+      console.error('Add review error:', error);
+      throw error;
     }
   }
 

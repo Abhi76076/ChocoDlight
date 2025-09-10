@@ -1,19 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, AuthResponse, RegisterRequest } from '../types';
-import apiService from '../services/api.js';
+import { User, AuthResponse, RegisterRequest, LoginRequest } from '../types';
+import apiService from '../services/api';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (name: string, email: string, password: string) => Promise<boolean>;
+  error: string | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => void;
   favorites: any[];
   addToFavorites: (productId: string) => Promise<void>;
   removeFromFavorites: (productId: string) => Promise<void>;
   loadFavorites: () => Promise<void>;
   isFavorite: (productId: string) => boolean;
-  showNotification: (message: string, type: 'success' | 'error' | 'info') => void;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,27 +22,33 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<any[]>([]);
 
   useEffect(() => {
     initAuth();
   }, []);
 
+  const clearError = () => setError(null);
+
   const showNotification = (message: string, type: 'success' | 'error' | 'info') => {
+    // Create notification element
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all transform translate-x-0 ${
+    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all transform translate-x-0 max-w-sm ${
       type === 'success' ? 'bg-green-500 text-white' :
       type === 'error' ? 'bg-red-500 text-white' :
       'bg-blue-500 text-white'
     }`;
     
     notification.innerHTML = `
-      <div class="flex items-center">
-        <div class="mr-3">
-          ${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <div class="mr-3">
+            ${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}
+          </div>
+          <div class="text-sm font-medium">${message}</div>
         </div>
-        <div>${message}</div>
-        <button class="ml-4 text-white hover:text-gray-200" onclick="this.parentElement.parentElement.remove()">×</button>
+        <button class="ml-4 text-white hover:text-gray-200 font-bold text-lg" onclick="this.parentElement.parentElement.remove()">×</button>
       </div>
     `;
     
@@ -66,13 +73,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         apiService.setToken(token);
         const response = await apiService.getCurrentUser();
-        setUser(response.user);
-        await loadFavorites();
+        if (response && response.user) {
+          setUser(response.user);
+          await loadFavorites();
+        } else if (response && response.id) {
+          // Handle case where response is the user object directly
+          setUser(response);
+          await loadFavorites();
+        } else {
+          // Invalid response, clear token
+          localStorage.removeItem('token');
+          apiService.setToken(null);
+        }
       } catch (error) {
         console.error('Token validation failed:', error);
         localStorage.removeItem('token');
         apiService.setToken(null);
-        showNotification('Session expired. Please login again.', 'info');
+        setError('Session expired. Please login again.');
       }
     }
     setLoading(false);
@@ -102,46 +119,76 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<void> => {
     try {
-      const response: AuthResponse = await apiService.login({ email, password });
-      setUser(response.user);
-      await loadFavorites();
-      showNotification(`Welcome back, ${response.user.name}!`, 'success');
-      return true;
+      setLoading(true);
+      setError(null);
+      
+      const loginData: LoginRequest = { email, password };
+      const response: AuthResponse = await apiService.login(loginData);
+      
+      if (response && response.user && response.token) {
+        setUser(response.user);
+        await loadFavorites();
+        showNotification(`Welcome back, ${response.user.name}!`, 'success');
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
-      showNotification(error.message || 'Login failed. Please try again.', 'error');
+      const errorMessage = error.message || 'Login failed. Please try again.';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<boolean> => {
+  const register = async (name: string, email: string, password: string, confirmPassword: string): Promise<void> => {
     try {
-      const registerData: RegisterRequest = { name, email, password, confirmPassword: password };
+      setLoading(true);
+      setError(null);
+      
+      if (password !== confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+      
+      const registerData: RegisterRequest = { name, email, password, confirmPassword };
       const response: AuthResponse = await apiService.register(registerData);
-      setUser(response.user);
-      await loadFavorites();
-      showNotification(`Welcome to ChocoDelight, ${response.user.name}!`, 'success');
-      return true;
+      
+      if (response && response.user && response.token) {
+        setUser(response.user);
+        await loadFavorites();
+        showNotification(`Welcome to ChocoDelight, ${response.user.name}!`, 'success');
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
-      showNotification(error.message || 'Registration failed. Please try again.', 'error');
+      const errorMessage = error.message || 'Registration failed. Please try again.';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   const logout = () => {
     setUser(null);
     setFavorites([]);
+    setError(null);
     apiService.logout();
     showNotification('You have been logged out successfully', 'info');
   };
 
   const addToFavorites = async (productId: string) => {
     if (!user) {
-      showNotification('Please login to add favorites', 'error');
-      throw new Error('Please login to add favorites');
+      const errorMessage = 'Please login to add favorites';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
+      throw new Error(errorMessage);
     }
     
     try {
@@ -150,15 +197,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       showNotification('Added to favorites!', 'success');
     } catch (error: any) {
       console.error('Error adding to favorites:', error);
-      showNotification(error.message || 'Failed to add to favorites', 'error');
+      const errorMessage = error.message || 'Failed to add to favorites';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
       throw error;
     }
   };
 
   const removeFromFavorites = async (productId: string) => {
     if (!user) {
-      showNotification('Please login to manage favorites', 'error');
-      throw new Error('Please login to manage favorites');
+      const errorMessage = 'Please login to manage favorites';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
+      throw new Error(errorMessage);
     }
     
     try {
@@ -167,7 +218,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       showNotification('Removed from favorites', 'info');
     } catch (error: any) {
       console.error('Error removing from favorites:', error);
-      showNotification(error.message || 'Failed to remove from favorites', 'error');
+      const errorMessage = error.message || 'Failed to remove from favorites';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
       throw error;
     }
   };
@@ -176,6 +229,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider value={{
       user,
       loading,
+      error,
       login,
       register,
       logout,
@@ -184,7 +238,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       removeFromFavorites,
       loadFavorites,
       isFavorite,
-      showNotification
+      clearError
     }}>
       {children}
     </AuthContext.Provider>
